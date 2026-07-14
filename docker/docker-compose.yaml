@@ -1,0 +1,179 @@
+# =====================================================================
+# MarketPulse Platform — Docker Compose (V2 schema, no `version:` key)
+# =====================================================================
+# All tunables are sourced from OS environment / .env — nothing here is
+# hardcoded to a specific machine. Copy .env.example -> .env and adjust
+# as needed before running `docker compose up -d`.
+
+networks:
+  marketpulse_network:
+    name: marketpulse_network
+    driver: bridge
+
+volumes:
+  redpanda_data:
+  postgres_metadata_data:
+  airflow_logs:
+
+services:
+  # ------------------------------------------------------------------
+  # 1. Redpanda — Kafka-compatible streaming broker
+  # ------------------------------------------------------------------
+  redpanda:
+    image: docker.redpanda.com/redpandadata/redpanda:${REDPANDA_IMAGE_TAG:-v23.3.5}
+    container_name: marketpulse_redpanda
+    command:
+      - redpanda
+      - start
+      - --smp
+      - "1"
+      - --memory
+      - "1G"
+      - --reserve-memory
+      - "0M"
+      - --overprovisioned
+      - --node-id
+      - "0"
+      - --kafka-addr
+      - internal://0.0.0.0:9092,external://0.0.0.0:${REDPANDA_EXTERNAL_PORT:-19092}
+      - --advertise-kafka-addr
+      - internal://redpanda:9092,external://localhost:${REDPANDA_EXTERNAL_PORT:-19092}
+      - --pandaproxy-addr
+      - 0.0.0.0:8082
+      - --advertise-pandaproxy-addr
+      - localhost:8082
+      - --rpc-addr
+      - 0.0.0.0:33145
+      - --advertise-rpc-addr
+      - redpanda:33145
+    ports:
+      - "${REDPANDA_EXTERNAL_PORT:-19092}:${REDPANDA_EXTERNAL_PORT:-19092}"
+      - "8082:8082"
+    networks:
+      - marketpulse_network
+    volumes:
+      - redpanda_data:/var/lib/redpanda/data
+    healthcheck:
+      test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # 2. Redpanda Console — broker/topic inspection UI (port 8888, avoids
+  #    colliding with Airflow's 8080)
+  # ------------------------------------------------------------------
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:${REDPANDA_CONSOLE_IMAGE_TAG:-v2.4.3}
+    container_name: marketpulse_redpanda_console
+    ports:
+      - "${REDPANDA_CONSOLE_PORT:-8888}:8080"
+    networks:
+      - marketpulse_network
+    environment:
+      KAFKA_BROKERS: "redpanda:9092"
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # 3. Postgres — Airflow metadata backend
+  # ------------------------------------------------------------------
+  postgres:
+    image: postgres:${POSTGRES_IMAGE_TAG:-15-alpine}
+    container_name: marketpulse_metadata_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-airflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-airflow}
+      POSTGRES_DB: ${POSTGRES_DB:-airflow}
+    volumes:
+      - postgres_metadata_data:/var/lib/postgresql/data
+    networks:
+      - marketpulse_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-airflow} -d ${POSTGRES_DB:-airflow}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # 4. Airflow — orchestration, LocalExecutor, OpenLineage-instrumented
+  #    Built from a custom image so dbt/great_expectations/openlineage
+  #    are actually present (the stock apache/airflow image lacks them).
+  # ------------------------------------------------------------------
+  airflow:
+    build:
+      context: ..
+      dockerfile: docker/airflow.Dockerfile
+      args:
+        AIRFLOW_BASE_IMAGE_TAG: ${AIRFLOW_IMAGE_TAG:-2.9.2-python3.10}
+    container_name: marketpulse_airflow
+    environment:
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://${POSTGRES_USER:-airflow}:${POSTGRES_PASSWORD:-airflow}@postgres:5432/${POSTGRES_DB:-airflow}
+      AIRFLOW__CORE__FERNET_KEY: ${AIRFLOW_FERNET_KEY:-}
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_WEBSERVER_SECRET_KEY:-marketpulse_dev_secret_key}
+      AIRFLOW_UID: ${AIRFLOW_UID:-50000}
+      # --- Airflow admin bootstrap (idempotent, see airflow-entrypoint.sh) ---
+      _AIRFLOW_ADMIN_USERNAME: ${AIRFLOW_ADMIN_USERNAME:-admin}
+      _AIRFLOW_ADMIN_PASSWORD: ${AIRFLOW_ADMIN_PASSWORD:-admin}
+      _AIRFLOW_ADMIN_EMAIL: ${AIRFLOW_ADMIN_EMAIL:-admin@marketpulse.local}
+      # --- OpenLineage: console transport by default (zero extra infra).
+      # Point OPENLINEAGE_URL at a real collector (e.g. Marquez) and
+      # switch OPENLINEAGE__TRANSPORT__TYPE to "http" for production use.
+      OPENLINEAGE__TRANSPORT__TYPE: ${OPENLINEAGE_TRANSPORT_TYPE:-console}
+      OPENLINEAGE_URL: ${OPENLINEAGE_URL:-}
+      OPENLINEAGE_NAMESPACE: marketpulse
+      # --- Paths resolved dynamically inside the container, never hardcoded ---
+      PYTHONPATH: /opt/airflow
+      DBT_PROJECT_DIR: /opt/airflow/transform_dbt
+      DBT_PROFILES_DIR: /opt/airflow/transform_dbt
+      MARKETPULSE_DB_PATH: /opt/airflow/transform_dbt/marketpulse_local.db
+    volumes:
+      - ../dags:/opt/airflow/dags
+      - ../transform_dbt:/opt/airflow/transform_dbt
+      - ../src:/opt/airflow/src
+      - airflow_logs:/opt/airflow/logs
+    ports:
+      - "${AIRFLOW_WEB_PORT:-8080}:8080"
+    networks:
+      - marketpulse_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------
+  # 5. Dashboard — Streamlit UI, reads the shared DuckDB file read-only
+  # ------------------------------------------------------------------
+  dashboard:
+    build:
+      context: ..
+      dockerfile: docker/dashboard.Dockerfile
+    container_name: marketpulse_dashboard
+    ports:
+      - "${DASHBOARD_PORT:-8501}:8501"
+    networks:
+      - marketpulse_network
+    environment:
+      KAFKA_BROKERS: redpanda:9092
+      # Same DuckDB file the Airflow/dbt containers write to, mounted
+      # read-only here — the dashboard never needs write access.
+      MARKETPULSE_DB_PATH: /app/transform_dbt/marketpulse_local.db
+    volumes:
+      - ../transform_dbt:/app/transform_dbt:ro
+    depends_on:
+      redpanda:
+        condition: service_healthy
+    restart: unless-stopped

@@ -1,0 +1,45 @@
+name: 'marketpulse_transformations'
+version: '1.0.0'
+config-version: 2
+
+profile: 'marketpulse_profile'
+
+model-paths: ['models']
+analysis-paths: ['analyses']
+test-paths: ['tests']
+seed-paths: ['seeds']
+macro-paths: ['macros']
+snapshot-paths: ['snapshots']
+
+target-path: 'target'
+clean-targets:
+  - 'target'
+  - 'dbt_packages'
+
+vars:
+  use_seed_data: true
+
+seeds:
+  marketpulse_transformations:
+    raw_market_prices:
+      +column_types:
+        timestamp: timestamp
+        ticker: varchar
+        price: double
+        volume: double
+    raw_sentiment:
+      +column_types:
+        timestamp: timestamp
+        asset_tag: varchar
+        text_payload: varchar
+        sentiment_score: double
+        source: varchar
+
+models:
+  marketpulse_transformations:
+    staging:
+      +materialized: view
+    intermediate:
+      +materialized: view
+    marts:
+      +materialized: table

@@ -1,0 +1,13 @@
+kafka:
+  brokers:
+    - "localhost:19092"
+
+market:
+  mock_stream_rate_per_second: 2
+
+sentiment:
+  keywords:
+    - "BTC"
+    - "ETH"
+    - "SOL"
+  mock_stream_rate_per_second: 2

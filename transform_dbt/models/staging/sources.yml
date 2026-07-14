@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: lakehouse
+    description: >
+      Placeholder source for a real upstream table (e.g. a warehouse
+      landing zone). Only exercised when `use_seed_data: false`; the
+      default dev profile builds from the CSV seeds below instead.
+      Not wired to any real external system in this project yet — see
+      "Known Limitations" in the README.
+    tables:
+      - name: prices
+      - name: sentiment

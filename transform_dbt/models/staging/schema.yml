@@ -1,0 +1,48 @@
+version: 2
+
+models:
+  - name: stg_market_prices
+    description: >
+      Cleaned, typed view over the raw market price feed (seed data by
+      default; a real upstream source when `use_seed_data: false`).
+    columns:
+      - name: fact_timestamp
+        description: UTC timestamp of the price tick.
+        tests:
+          - not_null
+      - name: asset_ticker
+        description: Ticker symbol for the traded asset.
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+      - name: asset_price
+        description: Traded price at fact_timestamp.
+        tests:
+          - not_null
+      - name: traded_volume
+        description: Traded volume at fact_timestamp.
+        tests:
+          - not_null
+
+  - name: stg_sentiment
+    description: >
+      Cleaned, typed view over the raw social sentiment feed. Note: the
+      sentiment scores in this project come from a hardcoded template
+      simulator, not a trained NLP model — see README > Known Limitations.
+    columns:
+      - name: fact_timestamp
+        tests:
+          - not_null
+      - name: asset_ticker
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+      - name: raw_text
+        tests:
+          - not_null
+      - name: simulated_sentiment_score
+        description: Simulated sentiment score in [-1.0, 1.0].
+        tests:
+          - not_null

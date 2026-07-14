@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: dim_assets
+    description: One row per tracked asset, with a surrogate key and display name.
+    columns:
+      - name: asset_key
+        description: md5 surrogate key over asset_ticker.
+        tests:
+          - not_null
+          - unique
+      - name: asset_ticker
+        tests:
+          - not_null
+          - unique
+          - accepted_values:
+              values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+
+  - name: fact_market_panic_index
+    description: >
+      Panic index per (asset_ticker, fact_timestamp): a weighted blend of
+      price-drop ratio (0.6) and negative rolling sentiment (0.4), clamped
+      to [0, 1]. See fact_market_panic_index.sql for the exact formula.
+    columns:
+      - name: asset_ticker
+        tests:
+          - not_null
+          - accepted_values:
+              values: ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+      - name: fact_timestamp
+        tests:
+          - not_null
+      - name: market_panic_index
+        description: Bounded panic score in [0.0, 1.0].
+        tests:
+          - not_null
+
+  - name: fact_market_anomalies
+    description: >
+      One row per price tick with a rolling volatility score and a
+      boolean anomaly flag (volatility spike + volume spike heuristic).
+    columns:
+      - name: anomaly_key
+        tests:
+          - not_null
+          - unique
+      - name: asset_ticker
+        tests:
+          - not_null
+      - name: is_structural_anomaly
+        tests:
+          - not_null

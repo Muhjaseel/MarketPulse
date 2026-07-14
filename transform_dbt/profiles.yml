@@ -1,0 +1,7 @@
+marketpulse_profile:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: 'marketpulse_local.db' # Local DuckDB file, created automatically on first run
+      threads: 4

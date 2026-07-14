@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check src/ dashboards/ dags/ tests/
+
+      - name: Run test suite (unit tests + real dbt build/test)
+        run: pytest tests/ -v
+
+  validate-docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Airflow image
+        run: docker build -f docker/airflow.Dockerfile -t marketpulse-airflow:ci .
+
+      - name: Build dashboard image
+        run: docker build -f docker/dashboard.Dockerfile -t marketpulse-dashboard:ci .

@@ -1,0 +1,16 @@
+timestamp,asset_tag,text_payload,sentiment_score,source
+2026-06-26T10:00:00,BTCUSDT,"Wow, Bitcoin is absolutely pumping right now!",0.85,social_nlp_worker
+2026-06-26T10:01:00,BTCUSDT,Massive whale liquidation detected. Classic dump scenario.,-0.72,social_nlp_worker
+2026-06-26T10:02:00,BTCUSDT,Just holding my crypto bags and watching sideways action.,0.00,social_nlp_worker
+2026-06-26T10:03:00,BTCUSDT,Panic sell incoming!! Everyone is dumping.,-0.88,social_nlp_worker
+2026-06-26T10:04:00,BTCUSDT,This crash is brutal. Getting out now.,-0.91,social_nlp_worker
+2026-06-26T10:00:00,ETHUSDT,Ethereum network gas fees are low and stable today.,0.25,social_nlp_worker
+2026-06-26T10:01:00,ETHUSDT,ETH holding steady near support levels.,0.15,social_nlp_worker
+2026-06-26T10:02:00,ETHUSDT,Minor pullback but fundamentals remain strong.,0.10,social_nlp_worker
+2026-06-26T10:03:00,ETHUSDT,Neutral chatter around Ethereum upgrades.,0.05,social_nlp_worker
+2026-06-26T10:04:00,ETHUSDT,Slight bullish momentum building on ETH.,0.20,social_nlp_worker
+2026-06-26T10:00:00,SOLUSDT,Solana DEX volume just flipped Ethereum again!,0.78,social_nlp_worker
+2026-06-26T10:01:00,SOLUSDT,Solana speed is unmatched right now.,0.60,social_nlp_worker
+2026-06-26T10:02:00,SOLUSDT,Another congestion issue on Solana. Frustrating.,-0.45,social_nlp_worker
+2026-06-26T10:03:00,SOLUSDT,SOL dipping but community still optimistic.,0.12,social_nlp_worker
+2026-06-26T10:04:00,SOLUSDT,Buying the dip on Solana.,0.35,social_nlp_worker

@@ -1,0 +1,23 @@
+# Runtime dependencies for running the producers/consumer, dbt, and the
+# test suite locally (outside Docker). Versions here are pinned to what
+# this repo's test suite was actually verified against.
+#
+# duckdb AND pandas are pinned to the SAME versions in every requirements
+# file in this repo (here, docker/airflow-requirements.txt, and
+# dashboards/streamlit/requirements.txt) on purpose: DuckDB's on-disk file
+# format is version-sensitive (the dashboard/Airflow/local test suite all
+# read or write the same marketpulse_local.db file), and pandas 3.0
+# changed default copy-on-write semantics + removed some deprecated APIs
+# relative to 2.2, so mixing pandas major versions across the processes
+# that share this file is its own source of subtle bugs. If you bump
+# either version, bump it in all three requirements files together.
+
+kafka-python-ng==2.2.3
+pyyaml==6.0.3
+duckdb==1.5.4
+pandas==2.2.2
+great_expectations==1.18.2
+dbt-core==1.11.12
+dbt-duckdb==1.10.1
+pytest==9.1.1
+ruff==0.15.20

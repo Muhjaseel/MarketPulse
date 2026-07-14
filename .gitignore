@@ -1,0 +1,61 @@
+# =====================================================================
+# MarketPulse — .gitignore
+# =====================================================================
+
+# --- Secrets / local environment ---
+.env
+*.env.local
+.env.*.local
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+.venv/
+venv/
+env/
+.python-version
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# --- Jupyter ---
+.ipynb_checkpoints/
+
+# --- DuckDB / dbt runtime artifacts ---
+*.duckdb
+*.db
+*.db.wal
+*.db-wal
+*.db-shm
+transform_dbt/target/
+transform_dbt/logs/
+transform_dbt/dbt_packages/
+transform_dbt/dbt_modules/
+transform_dbt/.user.yml
+logs/
+*.log
+
+# --- Airflow runtime ---
+airflow/logs/
+airflow/airflow.db
+airflow/airflow-webserver.pid
+airflow/standalone_admin_password.txt
+dags/__pycache__/
+
+# --- Docker / container local state ---
+docker/.env
+**/docker-compose.override.yaml
+
+# --- Great Expectations local artifacts ---
+gx/uncommitted/
+great_expectations/uncommitted/
+
+# --- OS / editor cruft ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,8 @@
+# Installed on top of the apache/airflow base image (see airflow.Dockerfile).
+# duckdb is pinned to match requirements.txt / dashboards/streamlit/requirements.txt
+# so every reader/writer of marketpulse_local.db uses the same file format.
+dbt-duckdb==1.10.1
+duckdb==1.5.4
+pandas==2.2.2
+great_expectations==1.18.2
+openlineage-airflow==1.16.0
